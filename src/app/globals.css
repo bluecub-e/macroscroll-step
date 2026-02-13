@@ -1,0 +1,42 @@
+@import url('https://cdn.jsdelivr.net/gh/rriver2/dunggeunmo/dunggeunmo.css');
+
+:root {
+  /* Windows 3.1 Color Palette */
+  --desktop-bg: #008080; /* Teal */
+  --window-bg: #ffffff;
+  --window-frame: #c0c0c0; /* Silver */
+  --title-bar-active-bg: #000080; /* Navy */
+  --title-bar-active-text: #ffffff;
+  --title-bar-inactive-bg: #ffffff;
+  --title-bar-inactive-text: #000000;
+  --button-face: #c0c0c0;
+  --button-shadow: #808080;
+  --button-highlight: #ffffff;
+  --text-color: #000000;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow: hidden; /* Prevent scrolling on desktop, handle inside windows */
+  height: 100vh;
+}
+
+body {
+  color: var(--text-color);
+  background: var(--desktop-bg);
+  font-family: 'DungGeunMo', monospace; /* Fallback to monospace */
+  -webkit-font-smoothing: none; /* Pixel perfect */
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+

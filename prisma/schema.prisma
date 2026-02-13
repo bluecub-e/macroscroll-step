@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 사용자 계정
+model User {
+  id           Int           @id @default(autoincrement())
+  username     String        @unique
+  passwordHash String
+  cash         Int           @default(1000000) // 초기 자금 1,000,000 C
+  createdAt    DateTime      @default(now())
+  holdings     Holding[]
+  transactions Transaction[]
+}
+
+// 보유 주식
+model Holding {
+  id       Int    @id @default(autoincrement())
+  userId   Int
+  symbol   String
+  quantity Int
+  avgPrice Int    // 평균 매수가
+  user     User   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, symbol])
+}
+
+// 거래 내역
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String   // "buy" or "sell"
+  symbol    String
+  quantity  Int
+  price     Int
+  total     Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// 글로벌 주가 (모든 사용자가 공유)
+model StockPrice {
+  symbol        String   @id
+  name          String
+  price         Int
+  change        Int      @default(0)
+  changePercent Float    @default(0)
+  volatility    Float
+  type          String   // "stock", "fund", "index"
+  updatedAt     DateTime @updatedAt
+  history       StockHistory[]
+}
+
+// 주가 기록 (차트용)
+model StockHistory {
+  id        Int        @id @default(autoincrement())
+  symbol    String
+  price     Int
+  createdAt DateTime   @default(now())
+  stock     StockPrice @relation(fields: [symbol], references: [symbol])
+
+  @@index([symbol, createdAt])
+}
