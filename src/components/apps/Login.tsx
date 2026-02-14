@@ -66,7 +66,7 @@ export default function Login() {
     };
 
     return (
-        <div style={{ padding: "16px", height: "100%", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "16px", height: "100%", display: "flex", flexDirection: "column", boxSizing: "border-box", width: "100%", overflowX: "hidden" }}>
             <h3 style={{ marginBottom: "16px", fontSize: "14px" }}>
                 {isRegisterMode ? "회원가입" : "로그인"}
             </h3>

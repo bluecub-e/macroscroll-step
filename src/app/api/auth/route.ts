@@ -1,16 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-
-// 간단한 해시 함수 (프로덕션에서는 bcrypt 사용 권장)
-function simpleHash(str: string): string {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        const char = str.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash |= 0;
-    }
-    return hash.toString(16);
-}
+import bcrypt from "bcryptjs";
 
 // POST: 로그인 또는 회원가입
 export async function POST(request: NextRequest) {
@@ -25,14 +15,15 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "사용자명은 2-20자여야 합니다." }, { status: 400 });
         }
 
-        const passwordHash = simpleHash(password);
-
         if (action === "register") {
             // 회원가입
             const existing = await prisma.user.findUnique({ where: { username } });
             if (existing) {
                 return NextResponse.json({ error: "이미 존재하는 사용자명입니다." }, { status: 400 });
             }
+
+            // 비밀번호 해시화 (bcrypt)
+            const passwordHash = await bcrypt.hash(password, 10);
 
             const user = await prisma.user.create({
                 data: { username, passwordHash },
@@ -45,7 +36,13 @@ export async function POST(request: NextRequest) {
         } else {
             // 로그인
             const user = await prisma.user.findUnique({ where: { username } });
-            if (!user || user.passwordHash !== passwordHash) {
+            if (!user) {
+                return NextResponse.json({ error: "사용자명 또는 비밀번호가 올바르지 않습니다." }, { status: 401 });
+            }
+
+            // 비밀번호 검증 (bcrypt)
+            const isValid = await bcrypt.compare(password, user.passwordHash);
+            if (!isValid) {
                 return NextResponse.json({ error: "사용자명 또는 비밀번호가 올바르지 않습니다." }, { status: 401 });
             }
 

@@ -16,6 +16,38 @@ export default function Settings() {
     const [isAdmin, setIsAdmin] = useState(false);
     const [message, setMessage] = useState("");
 
+    // 회원 탈퇴 상태
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deletePassword, setDeletePassword] = useState("");
+
+    const handleDeleteAccount = async () => {
+        if (!deletePassword) {
+            setMessage("비밀번호를 입력해주세요.");
+            return;
+        }
+
+        if (!confirm("정말 탈퇴하시겠습니까? 이 작업은 되돌릴 수 없습니다.")) return;
+
+        try {
+            const res = await fetch("/api/user/delete", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: user?.username, password: deletePassword }),
+            });
+
+            if (res.ok) {
+                alert("회원 탈퇴가 완료되었습니다. 이용해 주셔서 감사합니다.");
+                logout(); // 로그아웃 처리
+            } else {
+                const data = await res.json();
+                setMessage(data.error || "탈퇴 실패");
+            }
+        } catch (error) {
+            console.error("Delete account error", error);
+            setMessage("서버 오류가 발생했습니다.");
+        }
+    };
+
     // 종목별 설정 상태
     const [stockSettings, setStockSettings] = useState<StockSetting[]>([]);
     const [loadingStocks, setLoadingStocks] = useState(false);
@@ -125,10 +157,73 @@ export default function Settings() {
                         borderRightColor: "#fff",
                         borderBottomColor: "#fff",
                         cursor: "pointer",
+                        marginRight: "8px",
                     }}
                 >
                     로그아웃
                 </button>
+
+                <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    style={{
+                        padding: "6px 12px",
+                        backgroundColor: "#c0c0c0",
+                        color: "#c00",
+                        border: "2px solid #000",
+                        borderRightColor: "#fff",
+                        borderBottomColor: "#fff",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                    }}
+                >
+                    회원 탈퇴
+                </button>
+
+                {showDeleteConfirm && (
+                    <div style={{ marginTop: "16px", padding: "12px", border: "2px solid #c00", backgroundColor: "#fff0f0" }}>
+                        <h5 style={{ color: "#c00", marginBottom: "8px" }}>⚠️ 정말 탈퇴하시겠습니까?</h5>
+                        <p style={{ fontSize: "12px", marginBottom: "8px" }}>
+                            모든 자산과 거래 내역이 삭제되며 복구할 수 없습니다.
+                        </p>
+                        <input
+                            type="password"
+                            placeholder="비밀번호 확인"
+                            value={deletePassword}
+                            onChange={(e) => setDeletePassword(e.target.value)}
+                            style={{ width: "100%", padding: "4px", marginBottom: "8px", border: "1px solid #000" }}
+                        />
+                        <div style={{ display: "flex", gap: "8px" }}>
+                            <button
+                                onClick={handleDeleteAccount}
+                                style={{
+                                    flex: 1,
+                                    padding: "4px",
+                                    backgroundColor: "#c00",
+                                    color: "#fff",
+                                    border: "1px solid #000",
+                                    cursor: "pointer",
+                                }}
+                            >
+                                탈퇴 확인
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowDeleteConfirm(false);
+                                    setDeletePassword("");
+                                }}
+                                style={{
+                                    flex: 1,
+                                    padding: "4px",
+                                    backgroundColor: "#fff",
+                                    border: "1px solid #000",
+                                    cursor: "pointer",
+                                }}
+                            >
+                                취소
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {isAdmin && (
