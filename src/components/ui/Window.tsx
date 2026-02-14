@@ -14,6 +14,7 @@ interface WindowProps {
     height?: number;
     minWidth?: number;
     minHeight?: number;
+    style?: React.CSSProperties;
 }
 
 export default function Window({
@@ -28,6 +29,7 @@ export default function Window({
     height = 300,
     minWidth = 200,
     minHeight = 150,
+    style,
 }: WindowProps) {
     const [position, setPosition] = useState({ x: initialX, y: initialY });
     const [size, setSize] = useState({ width, height });
@@ -37,6 +39,15 @@ export default function Window({
 
     const dragStartPos = useRef({ x: 0, y: 0 });
     const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0, posX: 0, posY: 0 });
+
+    // Props 변경 시 내부 상태 업데이트 (모바일 회전/리사이즈 대응)
+    useEffect(() => {
+        setSize({ width, height });
+    }, [width, height]);
+
+    useEffect(() => {
+        setPosition({ x: initialX, y: initialY });
+    }, [initialX, initialY]);
 
     // Move Logic
     const handleMouseDown = (e: React.MouseEvent) => {
@@ -143,6 +154,7 @@ export default function Window({
                 padding: "4px", // Increased padding for resize handles
                 zIndex: isActive ? 100 : 1,
                 boxSizing: "border-box",
+                ...style, // 외부 스타일 적용
             }}
             onMouseDown={onFocus}
         >

@@ -21,7 +21,7 @@ const RenderWindow = ({ id, isOpen, isActive, title, component, initialPos, onCl
         minWidth: window.innerWidth,
         minHeight: window.innerHeight - 44,
         style: {
-            position: "fixed", // 모바일에서는 강제 고정
+            position: "fixed" as const, // 모바일에서는 강제 고정
             top: 0,
             left: 0,
         }
@@ -116,18 +116,24 @@ export default function Desktop() {
                 )}
             </div>
 
-            {/* 창들 */}
-            <RenderWindow
-                id="login"
-                isOpen={openWindows.includes("login")}
-                isActive={activeWindowId === "login"}
-                title="시스템 접속"
-                component={<Login />}
-                initialPos={{ x: isMobile ? 0 : 300, y: isMobile ? 0 : 200 }}
-                onClose={closeWindow}
-                onFocus={focusWindow}
-                isMobile={isMobile}
-            />
+            {/* 모바일 화면에서 로그인 페이지는 창 장식 없이 전체 화면으로 표시 */}
+            {!user && isMobile ? (
+                <div style={{ width: "100%", height: "100%", backgroundColor: "#c0c0c0", overflow: "hidden" }}>
+                    <Login />
+                </div>
+            ) : (
+                <RenderWindow
+                    id="login"
+                    isOpen={openWindows.includes("login")}
+                    isActive={activeWindowId === "login"}
+                    title="시스템 접속"
+                    component={<Login />}
+                    initialPos={{ x: isMobile ? 0 : 300, y: isMobile ? 0 : 200 }}
+                    onClose={closeWindow}
+                    onFocus={focusWindow}
+                    isMobile={isMobile}
+                />
+            )}
             <RenderWindow
                 id="stock-market"
                 isOpen={openWindows.includes("stock-market")}
