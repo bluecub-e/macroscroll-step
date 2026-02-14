@@ -69,3 +69,9 @@ model StockHistory {
 
   @@index([symbol, createdAt])
 }
+
+// 관리자 설정 (거시 경제 변수 등)
+model GlobalSetting {
+  key   String @id
+  value String
+}

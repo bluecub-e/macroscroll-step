@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import Window from "./Window";
 import StockMarket from "../apps/StockMarket";
 import Portfolio from "../apps/Portfolio";
@@ -8,162 +8,239 @@ import Settings from "../apps/Settings";
 import Login from "../apps/Login";
 import { useGame } from "@/contexts/GameContext";
 
-interface WindowConfig {
-    id: string;
-    title: string;
-    component: React.ReactNode;
-    width: number;
-    height: number;
-    initialX: number;
-    initialY: number;
-    icon: string;
-}
-
 export default function Desktop() {
-    const { user, stocks } = useGame();
-    const [activeWindowId, setActiveWindowId] = useState<string | null>(null);
-    const [openWindows, setOpenWindows] = useState<string[]>([]);
-    const wasLoggedIn = useRef(false);
+    const { user } = useGame();
+    const [openWindows, setOpenWindows] = useState<string[]>(["login"]);
+    const [activeWindowId, setActiveWindowId] = useState<string>("login");
+    const [isMobile, setIsMobile] = useState(false);
 
-    // 로그인/로그아웃 시에만 창 상태 변경
+    // 모바일 감지
     useEffect(() => {
-        const isLoggedIn = !!user;
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
 
-        // 로그인 상태가 변경된 경우에만 처리
-        if (isLoggedIn !== wasLoggedIn.current) {
-            if (isLoggedIn) {
-                setOpenWindows(["stock-market", "portfolio"]);
-                setActiveWindowId("stock-market");
-            } else {
-                setOpenWindows(["login"]);
-                setActiveWindowId("login");
-            }
-            wasLoggedIn.current = isLoggedIn;
-        }
-    }, [user]);
-
-    // 초기 상태 설정
+    // 로그인 상태 변경 시 창 업데이트
     useEffect(() => {
         if (user) {
             setOpenWindows(["stock-market", "portfolio"]);
             setActiveWindowId("stock-market");
-            wasLoggedIn.current = true;
         } else {
             setOpenWindows(["login"]);
             setActiveWindowId("login");
-            wasLoggedIn.current = false;
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [user ? "logged-in" : "logged-out"]);
 
-    const windowConfigs: WindowConfig[] = [
-        {
-            id: "login",
-            title: "로그인",
-            component: <Login />,
-            width: 280,
-            height: 320,
-            initialX: 200,
-            initialY: 80,
-            icon: "👤",
-        },
-        {
-            id: "stock-market",
-            title: "주식 시세",
-            component: <StockMarket />,
-            width: 450,
-            height: 350,
-            initialX: 20,
-            initialY: 20,
-            icon: "📈",
-        },
-        {
-            id: "portfolio",
-            title: "포트폴리오",
-            component: <Portfolio />,
-            width: 350,
-            height: 320,
-            initialX: 490,
-            initialY: 20,
-            icon: "💼",
-        },
-        {
-            id: "settings",
-            title: "설정",
-            component: <Settings />,
-            width: 280,
-            height: 300,
-            initialX: 200,
-            initialY: 100,
-            icon: "⚙️",
-        },
-    ];
-
-    const handleFocus = (id: string) => setActiveWindowId(id);
-
-    const handleClose = (id: string) => {
-        if (id === "login" && !user) return;
-        setOpenWindows((prev) => prev.filter((w) => w !== id));
-    };
-
-    const handleOpen = (id: string) => {
-        if (id !== "login" && !user) return;
-        setOpenWindows((prev) => {
-            if (prev.includes(id)) return prev;
-            return [...prev, id];
-        });
+    const openWindow = (id: string) => {
+        if (!openWindows.includes(id)) {
+            setOpenWindows([...openWindows, id]);
+        }
         setActiveWindowId(id);
     };
 
+    const closeWindow = (id: string) => {
+        if (id === "login" && !user) return; // 로그인 전에는 닫기 불가
+        setOpenWindows(openWindows.filter((windowId) => windowId !== id));
+    };
+
+    const focusWindow = (id: string) => {
+        setActiveWindowId(id);
+    };
+
+    const RenderWindow = ({ id, title, component, icon, initialPos }: any) => {
+        if (!openWindows.includes(id)) return null;
+
+        // 모바일이면 전체 화면 강제 적용
+        const mobileProps = isMobile ? {
+            width: window.innerWidth,
+            height: window.innerHeight - 40, // 작업 표시줄 고려
+            initialX: 0,
+            initialY: 0,
+            minWidth: window.innerWidth,
+            minHeight: window.innerHeight - 40,
+        } : {};
+
+        return (
+            <Window
+                title={title}
+                isActive={activeWindowId === id}
+                onClose={() => closeWindow(id)}
+                onFocus={() => focusWindow(id)}
+                initialX={initialPos.x}
+                initialY={initialPos.y}
+                // 모바일 최적화 props 전달
+                {...mobileProps}
+            >
+                {component}
+            </Window>
+        );
+    };
+
     return (
-        <div style={{ width: "100vw", height: "100vh", backgroundColor: "var(--desktop-bg)", position: "relative", overflow: "hidden" }}>
+        <div
+            style={{
+                width: "100vw",
+                height: "100vh",
+                backgroundColor: "#008080", // Windows 95 Teal
+                position: "relative",
+                overflow: "hidden",
+            }}
+        >
             {/* 바탕화면 아이콘 */}
-            {user && (
-                <div style={{ position: "absolute", top: 10, left: 10, display: "flex", flexDirection: "column", gap: "16px" }}>
-                    {windowConfigs.filter(w => w.id !== "login").map((win) => (
-                        <div
-                            key={win.id}
-                            onClick={() => handleOpen(win.id)}
-                            style={{ width: 70, textAlign: "center", cursor: "pointer", color: "#fff", textShadow: "1px 1px 0 #000" }}
-                        >
-                            <div style={{ width: 48, height: 48, margin: "0 auto 4px", backgroundColor: "#c0c0c0", border: "2px solid #fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "24px" }}>
-                                {win.icon}
-                            </div>
-                            <div style={{ fontSize: "12px" }}>{win.title}</div>
-                        </div>
-                    ))}
-                </div>
-            )}
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fill, 80px)",
+                    gap: "16px",
+                    padding: "16px",
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    zIndex: 0,
+                }}
+            >
+                {user && (
+                    <>
+                        <DesktopIcon label="주식 시세" icon="📈" onClick={() => openWindow("stock-market")} />
+                        <DesktopIcon label="내 자산" icon="💼" onClick={() => openWindow("portfolio")} />
+                        <DesktopIcon label="설정" icon="⚙️" onClick={() => openWindow("settings")} />
+                    </>
+                )}
+            </div>
 
             {/* 창들 */}
-            {windowConfigs.map((win) =>
-                openWindows.includes(win.id) && (
-                    <Window
-                        key={win.id}
-                        title={win.title}
-                        isActive={activeWindowId === win.id}
-                        onFocus={() => handleFocus(win.id)}
-                        onClose={() => handleClose(win.id)}
-                        initialX={win.initialX}
-                        initialY={win.initialY}
-                        width={win.width}
-                        height={win.height}
-                    >
-                        {win.component}
-                    </Window>
-                )
-            )}
+            <RenderWindow
+                id="login"
+                title="시스템 접속"
+                component={<Login />}
+                initialPos={{ x: isMobile ? 0 : 300, y: isMobile ? 0 : 200 }}
+            />
+            <RenderWindow
+                id="stock-market"
+                title="주식 시세 정보"
+                component={<StockMarket />}
+                initialPos={{ x: 50, y: 50 }}
+            />
+            <RenderWindow
+                id="portfolio"
+                title="포트폴리오 관리"
+                component={<Portfolio />}
+                initialPos={{ x: 500, y: 50 }}
+            />
+            <RenderWindow
+                id="settings"
+                title="환경 설정"
+                component={<Settings />}
+                initialPos={{ x: 300, y: 300 }}
+            />
 
-            {/* 상태 표시줄 */}
-            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "24px", backgroundColor: "var(--window-frame)", borderTop: "2px solid #fff", display: "flex", alignItems: "center", padding: "0 8px", fontSize: "12px" }}>
-                <span style={{ marginRight: "16px" }}>
-                    {user ? `👤 ${user.username}` : "로그인 필요"}
-                </span>
-                <span style={{ marginRight: "16px" }}>
-                    {stocks.length > 0 ? "🟢 연결됨" : "⏳ 로딩 중..."}
-                </span>
-                <span>Macroscroll Step For OVSE</span>
+            {/* 작업 표시줄 */}
+            <div
+                className="taskbar"
+                style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "40px",
+                    backgroundColor: "#c0c0c0",
+                    borderTop: "2px solid #fff",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 4px",
+                    zIndex: 1000,
+                }}
+            >
+                <button
+                    style={{
+                        fontWeight: "bold",
+                        padding: "4px 8px",
+                        marginRight: "8px",
+                        border: "2px solid #000",
+                        borderLeftColor: "#fff",
+                        borderTopColor: "#fff",
+                        backgroundColor: "#c0c0c0",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "4px",
+                    }}
+                >
+                    <span style={{ fontSize: "16px" }}>🏁</span> 시작
+                </button>
+
+                <div style={{ flex: 1, display: "flex", gap: "4px", overflowX: "auto" }}>
+                    {openWindows.map((id) => (
+                        <button
+                            key={id}
+                            onClick={() => activeWindowId === id ? setActiveWindowId("") : focusWindow(id)}
+                            style={{
+                                padding: "2px 8px",
+                                minWidth: "100px",
+                                textAlign: "left",
+                                backgroundColor: activeWindowId === id ? "#e0e0e0" : "#c0c0c0",
+                                border: activeWindowId === id ? "2px solid #000" : "2px solid #fff",
+                                borderRightColor: activeWindowId === id ? "#fff" : "#000",
+                                borderBottomColor: activeWindowId === id ? "#fff" : "#000",
+                                cursor: "pointer",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                fontWeight: activeWindowId === id ? "bold" : "normal",
+                            }}
+                        >
+                            {id === "login" ? "시스템 접속" :
+                                id === "stock-market" ? "주식 시세" :
+                                    id === "portfolio" ? "내 자산" : "설정"}
+                        </button>
+                    ))}
+                </div>
+
+                <div
+                    style={{
+                        padding: "2px 8px",
+                        border: "2px solid #888",
+                        borderRightColor: "#fff",
+                        borderBottomColor: "#fff",
+                        backgroundColor: "#c0c0c0",
+                        marginLeft: "8px",
+                        fontSize: "12px",
+                    }}
+                >
+                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
             </div>
+        </div>
+    );
+}
+
+function DesktopIcon({ label, icon, onClick }: { label: string; icon: string; onClick: () => void }) {
+    return (
+        <div
+            onClick={onClick}
+            style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                cursor: "pointer",
+                width: "80px",
+                textAlign: "center",
+            }}
+        >
+            <div style={{ fontSize: "32px", marginBottom: "4px" }}>{icon}</div>
+            <span
+                style={{
+                    color: "#fff",
+                    fontSize: "12px",
+                    textShadow: "1px 1px 1px #000",
+                    backgroundColor: "rgba(0,0,0,0.2)",
+                    padding: "2px 4px",
+                }}
+            >
+                {label}
+            </span>
         </div>
     );
 }

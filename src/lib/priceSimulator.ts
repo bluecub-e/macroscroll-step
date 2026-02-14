@@ -24,8 +24,22 @@ export async function seedStockPrices() {
 export async function simulatePrices() {
     const stocks = await prisma.stockPrice.findMany();
 
+    // 글로벌 설정 조회 (없으면 기본값 사용)
+    const settings = await prisma.globalSetting.findMany();
+    const marketTrend = parseFloat(settings.find((s: { key: string; value: string }) => s.key === "marketTrend")?.value || "0");
+    const volatilityMultiplier = parseFloat(settings.find((s: { key: string; value: string }) => s.key === "volatilityMultiplier")?.value || "1.0");
+
     for (const stock of stocks) {
-        const changePercent = (Math.random() - 0.5) * 2 * stock.volatility * 100;
+        // 기본 변동성에 배수 적용
+        const volatility = stock.volatility * volatilityMultiplier;
+
+        // 랜덤 변화율 계산 (-volatility ~ +volatility)
+        let changePercent = (Math.random() - 0.5) * 2 * volatility;
+
+        // 시장 추세 반영 (Trend가 양수면 상승 확률 증가)
+        // Trend 1.0 = 약 1% 추가 상승 압력
+        changePercent += marketTrend;
+
         const change = Math.round(stock.price * (changePercent / 100));
         const newPrice = Math.max(1, stock.price + change);
 
@@ -48,7 +62,6 @@ export async function simulatePrices() {
         });
 
         // 오래된 기록 삭제 (최근 20개만 유지) - 성능 최적화
-        // 10분의 1 확률로 실행하여 DB 부하 감소
         if (Math.random() < 0.1) {
             const count = await prisma.stockHistory.count({ where: { symbol: stock.symbol } });
             if (count > 20) {
