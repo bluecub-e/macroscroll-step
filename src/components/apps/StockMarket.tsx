@@ -68,7 +68,7 @@ export default function StockMarket() {
                 <div style={{ padding: "4px", borderBottom: "1px solid #000", fontWeight: "bold", fontSize: isMobile ? "12px" : "14px" }}>
                     보유 현금: {user.cash.toLocaleString()} C
                 </div>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: isMobile ? "11px" : "13px" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: isMobile ? "10px" : "13px", tableLayout: "fixed" }}>
                     <thead>
                         <tr style={{ borderBottom: "1px solid #000", textAlign: "left" }}>
                             <th style={{ padding: "4px" }}>종목</th>
@@ -110,18 +110,19 @@ export default function StockMarket() {
                 <div style={{
                     width: isMobile ? "100%" : "180px",
                     display: "flex",
-                    flexDirection: isMobile ? "row" : "column",
+                    flexDirection: "column", // 모바일에서도 세로 배치로 변경하여 가로 공간 확보
                     gap: "8px",
-                    flex: isMobile ? "0 0 auto" : "none", // 모바일에서는 내용물만큼만 높이 차지 (하단 고정 느낌)
-                    maxHeight: isMobile ? "45%" : "none", // 너무 커지지 않도록 제한
+                    flex: isMobile ? "0 0 auto" : "none",
+                    maxHeight: "none",
                     borderTop: isMobile ? "1px solid #888" : "none",
-                    paddingTop: isMobile ? "8px" : "0"
+                    paddingTop: isMobile ? "8px" : "0",
+                    paddingBottom: isMobile ? "8px" : "0" // 하단 여백 추가
                 }}>
                     {/* 차트 영역 */}
-                    <div style={{ border: "1px solid #000", padding: "4px", backgroundColor: "#fff", flex: 1, display: "flex", flexDirection: "column" }}>
+                    <div style={{ border: "1px solid #000", padding: "4px", backgroundColor: "#fff", display: "flex", flexDirection: "column", height: isMobile ? "120px" : "auto", flex: isMobile ? "none" : 1 }}>
                         <div style={{ fontSize: "11px", marginBottom: "2px", textAlign: "center" }}>{selectedStock.name}</div>
-                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                            <StockChart symbol={selectedStock.symbol} width={isMobile ? 120 : 170} height={isMobile ? 80 : 100} />
+                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", width: "100%" }}>
+                            <StockChart symbol={selectedStock.symbol} width="100%" height="100%" />
                         </div>
                     </div>
 

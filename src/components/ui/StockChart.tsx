@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 
 interface ChartProps {
     symbol: string;
-    width?: number;
-    height?: number;
+    width?: number | string;
+    height?: number | string;
 }
 
 interface DataPoint {
@@ -44,10 +44,14 @@ export default function StockChart({ symbol, width = 160, height = 80 }: ChartPr
     const maxPrice = Math.max(...prices);
     const range = maxPrice - minPrice || 1;
 
+    // SVG ViewBox 크기를 고정하되, 화면에 표시될 때는 100%로 늘어남
+    const svgWidth = 300;
+    const svgHeight = 150;
+
     // 좌표 변환
     const points = data.map((d, i) => {
-        const x = (i / (data.length - 1)) * width;
-        const y = height - ((d.price - minPrice) / range) * (height - 10) - 5; // 여백 5px
+        const x = (i / (data.length - 1)) * svgWidth;
+        const y = svgHeight - ((d.price - minPrice) / range) * (svgHeight - 10) - 5; // 여백 5px
         return `${x},${y}`;
     }).join(" ");
 
@@ -55,7 +59,7 @@ export default function StockChart({ symbol, width = 160, height = 80 }: ChartPr
 
     return (
         <div style={{ width, height, backgroundColor: "#fff", border: "1px solid #000", position: "relative" }}>
-            <svg width={width} height={height}>
+            <svg width="100%" height="100%" viewBox={`0 0 ${svgWidth} ${svgHeight}`} preserveAspectRatio="none">
                 <polyline
                     fill="none"
                     stroke={color}
