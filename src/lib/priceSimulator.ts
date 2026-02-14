@@ -38,7 +38,8 @@ export async function simulatePrices() {
 
         // 시장 추세 반영 (Trend가 양수면 상승 확률 증가)
         // Trend 1.0 = 약 1% 추가 상승 압력
-        changePercent += marketTrend;
+        // 개별 종목 트렌드도 반영
+        changePercent += marketTrend + ((stock as any).trend || 0);
 
         const change = Math.round(stock.price * (changePercent / 100));
         const newPrice = Math.max(1, stock.price + change);

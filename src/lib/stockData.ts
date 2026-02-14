@@ -1,11 +1,13 @@
 export interface Stock {
     symbol: string;
     name: string;
+    type: "stock" | "fund" | "index";
     price: number;
     change: number;
     changePercent: number;
-    volatility: number; // 0.0 to 1.0 (higher means more volatile)
-    type: 'stock' | 'fund' | 'index';
+    volatility: number;
+    updatedAt?: Date;
+    trend?: number; // 개별 종목 트렌드 추가
     description?: string;
 }
 

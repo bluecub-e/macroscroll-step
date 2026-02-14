@@ -19,7 +19,8 @@ export default function StockChart({ symbol, width = 160, height = 80 }: ChartPr
     useEffect(() => {
         const fetchHistory = async () => {
             try {
-                const res = await fetch(`/api/stocks/${symbol}`);
+                // 캐싱 방지를 위해 timestamp 추가
+                const res = await fetch(`/api/stocks/${symbol}?t=${Date.now()}`);
                 if (res.ok) {
                     const history = await res.json();
                     setData(history);

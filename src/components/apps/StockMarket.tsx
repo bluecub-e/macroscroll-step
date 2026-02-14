@@ -33,6 +33,15 @@ export default function StockMarket() {
         setTimeout(() => setMessage(""), 2000);
     };
 
+    // 모바일 감지 (간단한 구현)
+    const [isMobile, setIsMobile] = useState(false);
+    React.useEffect(() => {
+        const check = () => setIsMobile(window.innerWidth < 768);
+        check();
+        window.addEventListener("resize", check);
+        return () => window.removeEventListener("resize", check);
+    }, []);
+
     if (!user) {
         return (
             <div style={{ padding: "20px", textAlign: "center", color: "#666" }}>
@@ -42,13 +51,13 @@ export default function StockMarket() {
     }
 
     return (
-        <div style={{ display: "flex", gap: "8px", height: "100%" }}>
+        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "8px", height: "100%" }}>
             {/* 종목 리스트 */}
-            <div style={{ flex: 1, overflowY: "auto" }}>
-                <div style={{ padding: "4px", borderBottom: "1px solid #000", fontWeight: "bold" }}>
+            <div style={{ flex: isMobile ? "none" : 1, height: isMobile ? "45%" : "auto", overflowY: "auto" }}>
+                <div style={{ padding: "4px", borderBottom: "1px solid #000", fontWeight: "bold", fontSize: isMobile ? "12px" : "14px" }}>
                     보유 현금: {user.cash.toLocaleString()} C
                 </div>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: isMobile ? "11px" : "13px" }}>
                     <thead>
                         <tr style={{ borderBottom: "1px solid #000", textAlign: "left" }}>
                             <th style={{ padding: "4px" }}>종목</th>
@@ -70,7 +79,7 @@ export default function StockMarket() {
                             >
                                 <td style={{ padding: "4px" }}>
                                     <div style={{ fontWeight: "bold" }}>{stock.symbol}</div>
-                                    <div style={{ fontSize: "11px", opacity: 0.8 }}>{stock.name}</div>
+                                    <div style={{ fontSize: "10px", opacity: 0.8, display: isMobile ? "none" : "block" }}>{stock.name}</div>
                                 </td>
                                 <td style={{ padding: "4px", textAlign: "right" }}>
                                     {stock.price.toLocaleString()} C
@@ -87,16 +96,18 @@ export default function StockMarket() {
 
             {/* 주문 패널 & 차트 */}
             {selectedStock && (
-                <div style={{ width: "180px", display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div style={{ width: isMobile ? "100%" : "180px", display: "flex", flexDirection: isMobile ? "row" : "column", gap: "8px", flex: isMobile ? 1 : "none" }}>
                     {/* 차트 영역 */}
-                    <div style={{ border: "1px solid #000", padding: "4px", backgroundColor: "#fff" }}>
-                        <div style={{ fontSize: "11px", marginBottom: "2px", textAlign: "center" }}>{selectedStock.name} 주가 추이</div>
-                        <StockChart symbol={selectedStock.symbol} width={170} height={100} />
+                    <div style={{ border: "1px solid #000", padding: "4px", backgroundColor: "#fff", flex: 1, display: "flex", flexDirection: "column" }}>
+                        <div style={{ fontSize: "11px", marginBottom: "2px", textAlign: "center" }}>{selectedStock.name}</div>
+                        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <StockChart symbol={selectedStock.symbol} width={isMobile ? 120 : 170} height={isMobile ? 80 : 100} />
+                        </div>
                     </div>
 
                     {/* 주문 영역 */}
-                    <div style={{ padding: "8px", backgroundColor: "#e0e0e0", border: "1px solid #000", fontSize: "12px", flex: 1 }}>
-                        <div style={{ fontWeight: "bold", marginBottom: "4px" }}>{selectedStock.symbol} 주문</div>
+                    <div style={{ padding: "8px", backgroundColor: "#e0e0e0", border: "1px solid #000", fontSize: "12px", flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                        {!isMobile && <div style={{ fontWeight: "bold", marginBottom: "4px" }}>{selectedStock.symbol} 주문</div>}
                         <div style={{ marginBottom: "4px" }}>현재가: {selectedStock.price.toLocaleString()} C</div>
                         <div style={{ marginBottom: "8px" }}>보유: {holding?.quantity || 0}주</div>
 
@@ -116,10 +127,10 @@ export default function StockMarket() {
                         </div>
 
                         <div style={{ display: "flex", gap: "4px" }}>
-                            <button onClick={handleBuy} disabled={isTrading} style={{ flex: 1, padding: "4px", backgroundColor: "#c00", color: "#fff", border: "1px solid #000", cursor: "pointer", opacity: isTrading ? 0.5 : 1 }}>
+                            <button onClick={handleBuy} disabled={isTrading} style={{ flex: 1, padding: "8px 4px", backgroundColor: "#c00", color: "#fff", border: "1px solid #000", cursor: "pointer", opacity: isTrading ? 0.5 : 1 }}>
                                 매수
                             </button>
-                            <button onClick={handleSell} disabled={isTrading} style={{ flex: 1, padding: "4px", backgroundColor: "#00c", color: "#fff", border: "1px solid #000", cursor: "pointer", opacity: isTrading ? 0.5 : 1 }}>
+                            <button onClick={handleSell} disabled={isTrading} style={{ flex: 1, padding: "8px 4px", backgroundColor: "#00c", color: "#fff", border: "1px solid #000", cursor: "pointer", opacity: isTrading ? 0.5 : 1 }}>
                                 매도
                             </button>
                         </div>

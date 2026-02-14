@@ -54,6 +54,7 @@ model StockPrice {
   change        Int      @default(0)
   changePercent Float    @default(0)
   volatility    Float
+  trend         Float    @default(0) // 개별 종목 추세 (-2.0 ~ +2.0)
   type          String   // "stock", "fund", "index"
   updatedAt     DateTime @updatedAt
   history       StockHistory[]

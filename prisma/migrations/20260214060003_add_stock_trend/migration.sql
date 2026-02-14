@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "StockPrice" ADD COLUMN     "trend" DOUBLE PRECISION NOT NULL DEFAULT 0;

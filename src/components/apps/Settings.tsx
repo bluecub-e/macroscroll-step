@@ -3,34 +3,68 @@
 import React, { useState, useEffect } from "react";
 import { useGame } from "@/contexts/GameContext";
 
+interface StockSetting {
+    symbol: string;
+    volatility: number;
+    trend: number;
+}
+
 export default function Settings() {
     const { user, logout } = useGame();
+    const [marketTrend, setMarketTrend] = useState(0);
+    const [volatilityMultiplier, setVolatilityMultiplier] = useState(1.0);
     const [isAdmin, setIsAdmin] = useState(false);
-    const [marketTrend, setMarketTrend] = useState("0");
-    const [volatilityMultiplier, setVolatilityMultiplier] = useState("1.0");
     const [message, setMessage] = useState("");
+
+    // 종목별 설정 상태
+    const [stockSettings, setStockSettings] = useState<StockSetting[]>([]);
+    const [loadingStocks, setLoadingStocks] = useState(false);
 
     useEffect(() => {
         if (user?.username === "admin") {
             setIsAdmin(true);
-            fetchSettings();
+            fetchGlobalSettings();
+            fetchStockSettings();
+        } else {
+            setIsAdmin(false);
         }
     }, [user]);
 
-    const fetchSettings = async () => {
+    const fetchGlobalSettings = async () => {
         try {
             const res = await fetch("/api/admin/settings");
             if (res.ok) {
                 const data = await res.json();
-                setMarketTrend(data.marketTrend || "0");
-                setVolatilityMultiplier(data.volatilityMultiplier || "1.0");
+                setMarketTrend(parseFloat(data.marketTrend));
+                setVolatilityMultiplier(parseFloat(data.volatilityMultiplier));
             }
-        } catch (e) {
-            console.error("Failed to fetch settings", e);
+        } catch (error) {
+            console.error("Failed to fetch global settings", error);
         }
     };
 
-    const saveSettings = async () => {
+    const fetchStockSettings = async () => {
+        setLoadingStocks(true);
+        try {
+            const res = await fetch("/api/admin/stocks"); // 종목 목록 조회 API (생성 필요)
+            if (res.ok) {
+                const data = await res.json();
+                // 데이터 매핑: API 결과에 trend가 없으면 0으로 처리
+                const mapped = data.map((s: any) => ({
+                    symbol: s.symbol,
+                    volatility: s.volatility || 1.0,
+                    trend: s.trend || 0
+                }));
+                setStockSettings(mapped);
+            }
+        } catch (error) {
+            console.error("Failed to fetch stock settings", error);
+        } finally {
+            setLoadingStocks(false);
+        }
+    };
+
+    const handleSaveGlobal = async () => {
         try {
             const res = await fetch("/api/admin/settings", {
                 method: "POST",
@@ -38,35 +72,56 @@ export default function Settings() {
                 body: JSON.stringify({ marketTrend, volatilityMultiplier }),
             });
             if (res.ok) {
-                setMessage("설정이 저장되었습니다.");
+                setMessage("전체 설정 저장 완료!");
                 setTimeout(() => setMessage(""), 2000);
-            } else {
-                setMessage("저장 실패");
             }
-        } catch (e) {
-            setMessage("오류 발생");
+        } catch (error) {
+            console.error("Failed to save settings", error);
+            setMessage("저장 실패");
         }
     };
 
-    if (!user) return <div>로그인이 필요합니다.</div>;
+    const handleSaveStock = async (symbol: string, volatility: number, trend: number) => {
+        try {
+            const res = await fetch("/api/admin/stocks", {
+                method: "POST", // 개별 종목 업데이트 API
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ symbol, volatility, trend }),
+            });
+            if (res.ok) {
+                // 로컬 상태 업데이트
+                setStockSettings(prev => prev.map(s =>
+                    s.symbol === symbol ? { ...s, volatility, trend } : s
+                ));
+                setMessage(`${symbol} 설정 저장 완료!`);
+                setTimeout(() => setMessage(""), 2000);
+            }
+        } catch (error) {
+            console.error("Failed to save stock setting", error);
+            setMessage(`${symbol} 저장 실패`);
+        }
+    };
+
+    if (!user) {
+        return <div style={{ padding: "20px" }}>로그인이 필요합니다.</div>;
+    }
 
     return (
-        <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ border: "1px solid #000", padding: "12px", backgroundColor: "#fff" }}>
-                <h4 style={{ margin: "0 0 8px 0" }}>사용자 정보</h4>
-                <div style={{ fontSize: "14px", marginBottom: "8px" }}>
-                    <strong>ID:</strong> {user.username}
-                </div>
-                <div style={{ fontSize: "14px", marginBottom: "16px" }}>
-                    <strong>자산:</strong> {user.cash.toLocaleString()} C
-                </div>
+        <div style={{ padding: "16px", height: "100%", overflowY: "auto" }}>
+            <h3 style={{ marginBottom: "16px" }}>환경 설정</h3>
+
+            <div style={{ marginBottom: "24px", padding: "12px", border: "1px solid #888", backgroundColor: "#f0f0f0" }}>
+                <h4 style={{ marginBottom: "8px" }}>계정 정보</h4>
+                <div style={{ marginBottom: "8px" }}>사용자명: <b>{user.username}</b></div>
+                <div style={{ marginBottom: "16px" }}>보유 현금: {user.cash.toLocaleString()} C</div>
                 <button
                     onClick={logout}
                     style={{
-                        width: "100%",
-                        padding: "6px",
+                        padding: "6px 12px",
                         backgroundColor: "#c0c0c0",
-                        border: "1px solid #000",
+                        border: "2px solid #000",
+                        borderRightColor: "#fff",
+                        borderBottomColor: "#fff",
                         cursor: "pointer",
                     }}
                 >
@@ -75,58 +130,130 @@ export default function Settings() {
             </div>
 
             {isAdmin && (
-                <div style={{ border: "1px solid #000", padding: "12px", backgroundColor: "#e0e0e0" }}>
-                    <h4 style={{ margin: "0 0 12px 0", color: "#c00" }}>관리자 제어 패널</h4>
+                <div style={{ border: "2px solid #c00", padding: "12px", backgroundColor: "#fff0f0" }}>
+                    <h4 style={{ color: "#c00", marginBottom: "12px", borderBottom: "1px solid #c00", paddingBottom: "4px" }}>
+                        🛠️ 관리자 제어 패널
+                    </h4>
 
-                    <div style={{ marginBottom: "12px" }}>
-                        <label style={{ display: "block", fontSize: "12px", marginBottom: "4px" }}>
-                            시장 추세 (Trend): {marketTrend}
-                        </label>
-                        <input
-                            type="range"
-                            min="-2.0"
-                            max="2.0"
-                            step="0.1"
-                            value={marketTrend}
-                            onChange={(e) => setMarketTrend(e.target.value)}
-                            style={{ width: "100%" }}
-                        />
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "10px" }}>
-                            <span>Bear (-2.0)</span>
-                            <span>Neutral (0)</span>
-                            <span>Bull (+2.0)</span>
+                    {/* 글로벌 설정 */}
+                    <div style={{ marginBottom: "20px" }}>
+                        <h5 style={{ marginBottom: "8px" }}>📈 글로벌 시장 설정</h5>
+                        <div style={{ marginBottom: "12px" }}>
+                            <label style={{ display: "block", marginBottom: "4px", fontSize: "12px" }}>
+                                Market Trend (시장 추세): {marketTrend}
+                                <span style={{ color: "#666", marginLeft: "8px" }}>(양수=상승장, 음수=하락장)</span>
+                            </label>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <input
+                                    type="range"
+                                    min="-2.0"
+                                    max="2.0"
+                                    step="0.1"
+                                    value={marketTrend}
+                                    onChange={(e) => setMarketTrend(parseFloat(e.target.value))}
+                                    style={{ flex: 1 }}
+                                />
+                                <span style={{ width: "40px", textAlign: "right", fontSize: "12px" }}>{marketTrend}</span>
+                            </div>
                         </div>
+
+                        <div style={{ marginBottom: "16px" }}>
+                            <label style={{ display: "block", marginBottom: "4px", fontSize: "12px" }}>
+                                Volatility (변동성 배수): x{volatilityMultiplier}
+                            </label>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <input
+                                    type="range"
+                                    min="0.5"
+                                    max="5.0"
+                                    step="0.1"
+                                    value={volatilityMultiplier}
+                                    onChange={(e) => setVolatilityMultiplier(parseFloat(e.target.value))}
+                                    style={{ flex: 1 }}
+                                />
+                                <span style={{ width: "40px", textAlign: "right", fontSize: "12px" }}>x{volatilityMultiplier}</span>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={handleSaveGlobal}
+                            style={{
+                                width: "100%",
+                                padding: "6px",
+                                backgroundColor: "#c00",
+                                color: "#fff",
+                                border: "1px solid #000",
+                                cursor: "pointer",
+                                fontSize: "12px",
+                            }}
+                        >
+                            글로벌 설정 저장
+                        </button>
                     </div>
 
-                    <div style={{ marginBottom: "16px" }}>
-                        <label style={{ display: "block", fontSize: "12px", marginBottom: "4px" }}>
-                            변동성 배수 (Volatility): {volatilityMultiplier}x
-                        </label>
-                        <input
-                            type="range"
-                            min="0.5"
-                            max="3.0"
-                            step="0.1"
-                            value={volatilityMultiplier}
-                            onChange={(e) => setVolatilityMultiplier(e.target.value)}
-                            style={{ width: "100%" }}
-                        />
+                    {/* 종목별 설정 */}
+                    <div>
+                        <h5 style={{ marginBottom: "8px", display: "flex", justifyContent: "space-between" }}>
+                            📊 종목별 설정
+                            <button onClick={fetchStockSettings} style={{ fontSize: "10px", padding: "2px 4px" }}>새로고침</button>
+                        </h5>
+
+                        {loadingStocks ? (
+                            <div style={{ fontSize: "12px", color: "#666" }}>로딩 중...</div>
+                        ) : (
+                            <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "300px", overflowY: "auto", border: "1px solid #ccc", padding: "4px" }}>
+                                {stockSettings.map((stock) => (
+                                    <div key={stock.symbol} style={{ padding: "8px", border: "1px solid #ddd", display: "flex", flexDirection: "column", gap: "4px", backgroundColor: "#fff" }}>
+                                        <div style={{ fontWeight: "bold", fontSize: "12px", display: "flex", justifyContent: "space-between" }}>
+                                            {stock.symbol}
+                                            <button
+                                                onClick={() => handleSaveStock(stock.symbol, stock.volatility, stock.trend)}
+                                                style={{ fontSize: "10px", padding: "2px 6px", cursor: "pointer", backgroundColor: "#008080", color: "#fff", border: "none" }}
+                                            >
+                                                저장
+                                            </button>
+                                        </div>
+
+                                        {/* 개별 변동성 */}
+                                        <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px" }}>
+                                            <span style={{ width: "30px" }}>변동:</span>
+                                            <input
+                                                type="range" min="0.5" max="5.0" step="0.1"
+                                                value={stock.volatility}
+                                                onChange={(e) => {
+                                                    const val = parseFloat(e.target.value);
+                                                    setStockSettings(prev => prev.map(s => s.symbol === stock.symbol ? { ...s, volatility: val } : s));
+                                                }}
+                                                style={{ flex: 1 }}
+                                            />
+                                            <span style={{ width: "24px", textAlign: "right" }}>{stock.volatility}</span>
+                                        </div>
+
+                                        {/* 개별 추세 */}
+                                        <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px" }}>
+                                            <span style={{ width: "30px" }}>추세:</span>
+                                            <input
+                                                type="range" min="-2.0" max="2.0" step="0.1"
+                                                value={stock.trend}
+                                                onChange={(e) => {
+                                                    const val = parseFloat(e.target.value);
+                                                    setStockSettings(prev => prev.map(s => s.symbol === stock.symbol ? { ...s, trend: val } : s));
+                                                }}
+                                                style={{ flex: 1 }}
+                                            />
+                                            <span style={{ width: "24px", textAlign: "right" }}>{stock.trend}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
-                    <button
-                        onClick={saveSettings}
-                        style={{
-                            width: "100%",
-                            padding: "6px",
-                            backgroundColor: "#000080",
-                            color: "#fff",
-                            border: "1px solid #000",
-                            cursor: "pointer",
-                        }}
-                    >
-                        설정 저장
-                    </button>
-                    {message && <div style={{ marginTop: "8px", fontSize: "12px", color: "green" }}>{message}</div>}
+                    {message && (
+                        <div style={{ marginTop: "12px", color: "blue", fontSize: "12px", textAlign: "center", fontWeight: "bold" }}>
+                            {message}
+                        </div>
+                    )}
                 </div>
             )}
         </div>
