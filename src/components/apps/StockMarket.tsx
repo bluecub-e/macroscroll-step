@@ -51,9 +51,20 @@ export default function StockMarket() {
     }
 
     return (
-        <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "8px", height: "100%" }}>
+        <div style={{
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            gap: "8px",
+            height: "100%",
+            overflow: "hidden" // 전체 컨테이너는 넘치지 않도록
+        }}>
             {/* 종목 리스트 */}
-            <div style={{ flex: isMobile ? "none" : 1, height: isMobile ? "45%" : "auto", overflowY: "auto" }}>
+            <div style={{
+                flex: isMobile ? "1 1 auto" : 1, // 모바일에서는 유연하게 남는 공간 차지
+                height: isMobile ? "auto" : "auto",
+                overflowY: "auto",
+                minHeight: 0 // Flex child scroll fix
+            }}>
                 <div style={{ padding: "4px", borderBottom: "1px solid #000", fontWeight: "bold", fontSize: isMobile ? "12px" : "14px" }}>
                     보유 현금: {user.cash.toLocaleString()} C
                 </div>
@@ -96,7 +107,16 @@ export default function StockMarket() {
 
             {/* 주문 패널 & 차트 */}
             {selectedStock && (
-                <div style={{ width: isMobile ? "100%" : "180px", display: "flex", flexDirection: isMobile ? "row" : "column", gap: "8px", flex: isMobile ? 1 : "none" }}>
+                <div style={{
+                    width: isMobile ? "100%" : "180px",
+                    display: "flex",
+                    flexDirection: isMobile ? "row" : "column",
+                    gap: "8px",
+                    flex: isMobile ? "0 0 auto" : "none", // 모바일에서는 내용물만큼만 높이 차지 (하단 고정 느낌)
+                    maxHeight: isMobile ? "45%" : "none", // 너무 커지지 않도록 제한
+                    borderTop: isMobile ? "1px solid #888" : "none",
+                    paddingTop: isMobile ? "8px" : "0"
+                }}>
                     {/* 차트 영역 */}
                     <div style={{ border: "1px solid #000", padding: "4px", backgroundColor: "#fff", flex: 1, display: "flex", flexDirection: "column" }}>
                         <div style={{ fontSize: "11px", marginBottom: "2px", textAlign: "center" }}>{selectedStock.name}</div>

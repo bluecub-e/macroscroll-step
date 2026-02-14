@@ -12,14 +12,19 @@ import { useGame } from "@/contexts/GameContext";
 const RenderWindow = ({ id, isOpen, isActive, title, component, initialPos, onClose, onFocus, isMobile }: any) => {
     if (!isOpen) return null;
 
-    // 모바일이면 전체 화면 강제 적용
+    // 모바일이면 전체 화면 강제 적용 (안전하게 100dvh 사용 고려 또는 margin 적용)
     const mobileProps = isMobile ? {
         width: window.innerWidth,
-        height: window.innerHeight - 40, // 작업 표시줄 고려
+        height: window.innerHeight - 44, // 작업 표시줄(40px) + 안전 여백
         initialX: 0,
         initialY: 0,
         minWidth: window.innerWidth,
-        minHeight: window.innerHeight - 40,
+        minHeight: window.innerHeight - 44,
+        style: {
+            position: "fixed", // 모바일에서는 강제 고정
+            top: 0,
+            left: 0,
+        }
     } : {};
 
     return (

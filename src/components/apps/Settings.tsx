@@ -23,12 +23,14 @@ export default function Settings() {
     useEffect(() => {
         if (user?.username === "admin") {
             setIsAdmin(true);
+            // 최초 한 번만 로드하거나 명시적 버튼으로 로드하도록 변경할 수도 있으나,
+            // 일단 username이 바뀔 때만 로드하도록 수정하여 무한 루프 방지
             fetchGlobalSettings();
             fetchStockSettings();
         } else {
             setIsAdmin(false);
         }
-    }, [user]);
+    }, [user?.username]);
 
     const fetchGlobalSettings = async () => {
         try {
