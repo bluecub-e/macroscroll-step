@@ -8,6 +8,36 @@ import Settings from "../apps/Settings";
 import Login from "../apps/Login";
 import { useGame } from "@/contexts/GameContext";
 
+// 창 렌더링 컴포넌트 (Desktop 밖으로 분리하여 리렌더링 시 상태 초기화 방지)
+const RenderWindow = ({ id, isOpen, isActive, title, component, initialPos, onClose, onFocus, isMobile }: any) => {
+    if (!isOpen) return null;
+
+    // 모바일이면 전체 화면 강제 적용
+    const mobileProps = isMobile ? {
+        width: window.innerWidth,
+        height: window.innerHeight - 40, // 작업 표시줄 고려
+        initialX: 0,
+        initialY: 0,
+        minWidth: window.innerWidth,
+        minHeight: window.innerHeight - 40,
+    } : {};
+
+    return (
+        <Window
+            title={title}
+            isActive={isActive}
+            onClose={() => onClose(id)}
+            onFocus={() => onFocus(id)}
+            initialX={initialPos.x}
+            initialY={initialPos.y}
+            // 모바일 최적화 props 전달
+            {...mobileProps}
+        >
+            {component}
+        </Window>
+    );
+};
+
 export default function Desktop() {
     const { user } = useGame();
     const [openWindows, setOpenWindows] = useState<string[]>(["login"]);
@@ -49,35 +79,6 @@ export default function Desktop() {
         setActiveWindowId(id);
     };
 
-    const RenderWindow = ({ id, title, component, icon, initialPos }: any) => {
-        if (!openWindows.includes(id)) return null;
-
-        // 모바일이면 전체 화면 강제 적용
-        const mobileProps = isMobile ? {
-            width: window.innerWidth,
-            height: window.innerHeight - 40, // 작업 표시줄 고려
-            initialX: 0,
-            initialY: 0,
-            minWidth: window.innerWidth,
-            minHeight: window.innerHeight - 40,
-        } : {};
-
-        return (
-            <Window
-                title={title}
-                isActive={activeWindowId === id}
-                onClose={() => closeWindow(id)}
-                onFocus={() => focusWindow(id)}
-                initialX={initialPos.x}
-                initialY={initialPos.y}
-                // 모바일 최적화 props 전달
-                {...mobileProps}
-            >
-                {component}
-            </Window>
-        );
-    };
-
     return (
         <div
             style={{
@@ -113,27 +114,47 @@ export default function Desktop() {
             {/* 창들 */}
             <RenderWindow
                 id="login"
+                isOpen={openWindows.includes("login")}
+                isActive={activeWindowId === "login"}
                 title="시스템 접속"
                 component={<Login />}
                 initialPos={{ x: isMobile ? 0 : 300, y: isMobile ? 0 : 200 }}
+                onClose={closeWindow}
+                onFocus={focusWindow}
+                isMobile={isMobile}
             />
             <RenderWindow
                 id="stock-market"
+                isOpen={openWindows.includes("stock-market")}
+                isActive={activeWindowId === "stock-market"}
                 title="주식 시세 정보"
                 component={<StockMarket />}
                 initialPos={{ x: 50, y: 50 }}
+                onClose={closeWindow}
+                onFocus={focusWindow}
+                isMobile={isMobile}
             />
             <RenderWindow
                 id="portfolio"
+                isOpen={openWindows.includes("portfolio")}
+                isActive={activeWindowId === "portfolio"}
                 title="포트폴리오 관리"
                 component={<Portfolio />}
                 initialPos={{ x: 500, y: 50 }}
+                onClose={closeWindow}
+                onFocus={focusWindow}
+                isMobile={isMobile}
             />
             <RenderWindow
                 id="settings"
+                isOpen={openWindows.includes("settings")}
+                isActive={activeWindowId === "settings"}
                 title="환경 설정"
                 component={<Settings />}
                 initialPos={{ x: 300, y: 300 }}
+                onClose={closeWindow}
+                onFocus={focusWindow}
+                isMobile={isMobile}
             />
 
             {/* 작업 표시줄 */}
