@@ -257,11 +257,12 @@ export default function Settings() {
                         <div style={{ marginBottom: "16px" }}>
                             <label style={{ display: "block", marginBottom: "4px", fontSize: "12px" }}>
                                 Volatility (변동성 배수): x{volatilityMultiplier}
+                                {volatilityMultiplier === 0 && <span style={{ color: "blue", marginLeft: "8px" }}>(시장 동결)</span>}
                             </label>
                             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                                 <input
                                     type="range"
-                                    min="0.5"
+                                    min="0"
                                     max="5.0"
                                     step="0.1"
                                     value={volatilityMultiplier}
@@ -315,7 +316,7 @@ export default function Settings() {
                                         <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "11px" }}>
                                             <span style={{ width: "30px" }}>변동:</span>
                                             <input
-                                                type="range" min="0.5" max="5.0" step="0.1"
+                                                type="range" min="0" max="5.0" step="0.1"
                                                 value={stock.volatility}
                                                 onChange={(e) => {
                                                     const val = parseFloat(e.target.value);

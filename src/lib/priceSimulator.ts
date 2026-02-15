@@ -23,25 +23,35 @@ export async function seedStockPrices() {
 
 // 주가 시뮬레이션
 export async function simulatePrices() {
-    const stocks = await prisma.stockPrice.findMany();
-
-    // 글로벌 설정 조회 (없으면 기본값 사용)
+    // 글로벌 설정 조회 (없으면 기본값 사용) - 최상단에서 조회하여 동결 시 즉시 종료
     const settings = await prisma.globalSetting.findMany();
-    const marketTrend = parseFloat(settings.find((s: { key: string; value: string }) => s.key === "marketTrend")?.value || "0");
     const volatilityMultiplier = parseFloat(settings.find((s: { key: string; value: string }) => s.key === "volatilityMultiplier")?.value || "1.0");
+
+    // 변동성 배수가 0이면 시장 동결 상태이므로 모든 연산을 건너뜀 (DB 연산량 절감)
+    if (volatilityMultiplier === 0) {
+        return;
+    }
+
+    const marketTrend = parseFloat(settings.find((s: { key: string; value: string }) => s.key === "marketTrend")?.value || "0");
+    const stocks = await prisma.stockPrice.findMany();
 
     for (const stock of stocks) {
         // 기본 변동성에 배수 적용
         const volatility = stock.volatility * volatilityMultiplier;
 
         // 랜덤 변화율 계산 (-volatility ~ +volatility)
-        let changePercent = (Math.random() - 0.5) * 2 * volatility;
+        let changePercent = 0;
 
-        // 시장 추세 반영 (Trend가 양수면 상승 확률 증가)
-        // Trend 1.0 = 약 1% 추가 상승 압력
-        // 개별 종목 트렌드도 반영
-        const stockTrend = (stock as any).trend || 0;
-        changePercent += marketTrend + stockTrend;
+        // 변동성이 0이면 해당 종목 업데이트를 건너뜀
+        if (volatility > 0) {
+            changePercent = (Math.random() - 0.5) * 2 * volatility;
+            // 시장 추세 반영 (Trend가 양수면 상승 확률 증가)
+            const stockTrend = (stock as any).trend || 0;
+            changePercent += marketTrend + stockTrend;
+        } else {
+            // 개별 종목 동결 시 DB 업데이트 작업 수행 안 함
+            continue;
+        }
 
         const change = Math.round(stock.price * (changePercent / 100));
         const newPrice = Math.max(1, stock.price + change);
