@@ -135,6 +135,7 @@ export default function Desktop() {
                 />
             )}
             <RenderWindow
+                key="stock-market"
                 id="stock-market"
                 isOpen={openWindows.includes("stock-market")}
                 isActive={activeWindowId === "stock-market"}
@@ -146,6 +147,7 @@ export default function Desktop() {
                 isMobile={isMobile}
             />
             <RenderWindow
+                key="portfolio"
                 id="portfolio"
                 isOpen={openWindows.includes("portfolio")}
                 isActive={activeWindowId === "portfolio"}
@@ -157,6 +159,7 @@ export default function Desktop() {
                 isMobile={isMobile}
             />
             <RenderWindow
+                key="settings"
                 id="settings"
                 isOpen={openWindows.includes("settings")}
                 isActive={activeWindowId === "settings"}

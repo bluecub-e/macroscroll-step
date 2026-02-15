@@ -48,21 +48,22 @@ export default function Settings() {
         }
     };
 
-    // 종목별 설정 상태
     const [stockSettings, setStockSettings] = useState<StockSetting[]>([]);
+    const [hasFetched, setHasFetched] = useState(false);
     const [loadingStocks, setLoadingStocks] = useState(false);
 
     useEffect(() => {
-        if (user?.username === "admin") {
+        // admin일 때만 데이터를 가져오되, 한 번 가져왔으면 다시 가져오지 않음 (로컬 수정 값 보호)
+        if (user?.username === "admin" && !hasFetched) {
             setIsAdmin(true);
-            // 최초 한 번만 로드하거나 명시적 버튼으로 로드하도록 변경할 수도 있으나,
-            // 일단 username이 바뀔 때만 로드하도록 수정하여 무한 루프 방지
             fetchGlobalSettings();
             fetchStockSettings();
-        } else {
+            setHasFetched(true);
+        } else if (user?.username !== "admin") {
             setIsAdmin(false);
+            setHasFetched(false);
         }
-    }, [user?.username]);
+    }, [user?.username, hasFetched]);
 
     const fetchGlobalSettings = async () => {
         try {
